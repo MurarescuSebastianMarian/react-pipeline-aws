@@ -1,13 +1,30 @@
-FROM node:14 as builder
+# Utilizăm o imagine de bază cu Node.js pentru a construi aplicația React
+FROM node:latest as build
 
+# Setăm directorul de lucru în container
 WORKDIR /app
 
-COPY package.json .
+# Copiem fișierul package.json și package-lock.json (sau yarn.lock) în directorul de lucru
+COPY package*.json ./
 
-RUN npm i
+# Instalăm dependențele aplicației
+RUN npm install
 
+# Copiem întregul cod sursă al aplicației în directorul de lucru
 COPY . .
 
-EXPOSE 3000
+# Construim aplicația React
+RUN npm run build
 
-CMD ["npm", "start"]
+# Utilizăm o imagine de bază cu Nginx
+FROM nginx
+
+# Copiem conținutul din folderul curent în directorul radacină al serverului web Nginx
+# COPY . /usr/share/nginx/html
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expunem portul 80 pentru a putea accesa serverul web Nginx
+EXPOSE 80
+
+# Comandă implicită care va fi executată atunci când rulăm un container din imaginea noastră
+CMD ["nginx", "-g", "daemon off;"]
